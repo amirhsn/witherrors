@@ -1,22 +1,28 @@
 # With Errors
+
+[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/amirhsn/witherrors/main/LICENSE)
+[![Build Status](https://app.travis-ci.com/amirhsn/witherrors.svg?branch=main)](https://travis-ci.com/amirhsn/witherrors)
+[![codecov](https://badgen.net/codecov/c/github/amirhsn/witherrors)](https://codecov.io/gh/amirhsn/witherrors)
+
+
 With Errors (witherrors) package provide a flexible way to wrap and add additional information to your errors.
 
 ## Features
-* [New Error](#newerror)
-* [Wrap Error](#wraperror)
+* [New Error](#new-error)
+* [Wrap Error](#wrap-error)
 * [Error](#error)
-* [With Code](#withcode)
-* [With Custom Message](#withcustommessage)
-* [With Dependency](#withdependency)
-* [With Priority](#withpriority)
-* [Get Code](#getcode)
-* [Get Custom Message](#getcustommessage)
-* [Get Dependency](#getdependency)
-* [Get Error](#geterror)
-* [Get Message](#getmessage)
-* [Get Priority](#getpriority)
+* [With Code](#with-code)
+* [With Custom Message](#with-custom-message)
+* [With Dependency](#with-dependency)
+* [With Priority](#with-priority)
+* [Get Code](#get-code)
+* [Get Custom Message](#get-custom-message)
+* [Get Dependency](#get-dependency)
+* [Get Error](#get-error)
+* [Get Message](#get-message)
+* [Get Priority](#get-priority)
 * [Clear](#clear)
-* [Clear And Get](#clearandget)
+* [Clear And Get](#clear-and-get)
 
 ## Installation
 ```bash
@@ -147,3 +153,6 @@ _, err := redis.HDEL(.....)
 myError := er.WrapError(err)
 clearedErr := myError.ClearAndGet().WithCustomMessage("new err")
 ```
+
+## License
+[MIT](https://github.com/amirhsn/witherrors/blob/main/LICENSE) © Amir Husein
