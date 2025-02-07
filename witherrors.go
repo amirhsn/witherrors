@@ -3,33 +3,31 @@ package witherrors
 import "errors"
 
 type withErrors struct {
-	code          string
-	customMessage interface{}
-	dependency    string
-	err           error
-	message       string
-	priority      string
+	code             string
+	customMessage    interface{}
+	dependency       string
+	err              error
+	forcedHttpStatus int
+	message          string
+	priority         string
 }
 
 type WithErrors interface {
 	error
-	// Clear existing error with all custom `with` attributes.
-	Clear()
-	// Clear existing error with all custom `with` attributes and get the struct pointer
-	// to be passed into new witherrors struct methods.
-	ClearAndGet() WithErrors
 	// Get error code.
-	GetCode() string
+	Code() string
 	// Get additional custom error message.
-	GetCustomMessage() interface{}
+	CustomMessage() interface{}
 	// Get error dependency.
-	GetDependency() string
-	// Get error
-	GetError() error
+	Dependency() string
+	// Get error object.
+	ErrorObject() error
 	// Get additional error message.
-	GetMessage() string
+	Message() string
 	// Get error priority.
-	GetPriority() string
+	Priority() string
+	// Get forced error HTTP status.
+	ForcedErrorHTTPStatus() int
 	// Set error code.
 	WithCode(c string) WithErrors
 	// Set additional custom error message.
@@ -38,22 +36,43 @@ type WithErrors interface {
 	WithDependency(d string) WithErrors
 	// Set error priority.
 	WithPriority(p Priority) WithErrors
+	// Force error HTTP status.
+	// This will be used for error handling in the API layer (only works for http).
+	WithForcedErrorHTTPStatus(status int) WithErrors
 }
 
 // Create new error.
 // The behaviour is same as go built in error.
-func NewError(m string) error {
+func NewError(m string) WithErrors {
 	if m == "" {
-		return errors.New(emptyErrStr)
+		return build(nil, emptyErrStr)
 	}
-	return errors.New(m)
+	return build(nil, m)
 }
 
 // Wrap existing error to be passed into available struct attributes.
 func WrapError(err error) WithErrors {
-	return &withErrors{
-		err: err,
+	if err == nil {
+		return nil
 	}
+
+	return build(err, "")
+}
+
+func build(initialErr error, message string) WithErrors {
+	if _, ok := initialErr.(*withErrors); !ok {
+		if initialErr != nil {
+			return &withErrors{
+				err: initialErr,
+			}
+		}
+
+		return &withErrors{
+			err: errors.New(message),
+		}
+	}
+
+	return initialErr.(*withErrors)
 }
 
 // Get the error message, implementing go built in Error() function.
@@ -61,66 +80,130 @@ func (w *withErrors) Error() string {
 	return w.err.Error()
 }
 
-func (w *withErrors) Clear() {
-	w.code = ""
-	w.customMessage = nil
-	w.dependency = ""
-	w.err = nil
-	w.message = ""
-	w.priority = ""
+func GetCode(err error) string {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+
+	if wErr, ok = err.(WithErrors); !ok {
+		return ""
+	}
+
+	return wErr.Code()
 }
 
-func (w *withErrors) ClearAndGet() WithErrors {
-	w.code = ""
-	w.customMessage = nil
-	w.dependency = ""
-	w.err = nil
-	w.message = ""
-	w.priority = ""
-	return w
-}
-
-func (w *withErrors) GetCode() string {
+func (w *withErrors) Code() string {
 	if w.code == "" {
 		w.message = emptyCodeStr
 	}
 	return w.code
 }
 
-func (w *withErrors) GetCustomMessage() interface{} {
+func GetCustomMessage(err error) interface{} {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return nil
+	}
+	return wErr.CustomMessage()
+}
+
+func (w *withErrors) CustomMessage() interface{} {
 	if w.customMessage == nil {
 		w.message = emptyCustomMessageStr
 	}
 	return w.customMessage
 }
 
-func (w *withErrors) GetDependency() string {
+func GetDependency(err error) string {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return ""
+	}
+	return wErr.Dependency()
+}
+
+func (w *withErrors) Dependency() string {
 	if w.dependency == "" {
 		w.message = emptyDependencyStr
 	}
 	return w.dependency
 }
 
-func (w *withErrors) GetError() error {
+func GetErrorObject(err error) error {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return nil
+	}
+	return wErr.ErrorObject()
+}
+
+func (w *withErrors) ErrorObject() error {
 	if w.err == nil {
 		w.message = emptyErrStr
 	}
 	return w.err
 }
 
-func (w *withErrors) GetMessage() string {
+func GetMessage(err error) string {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return ""
+	}
+	return wErr.Message()
+}
+
+func (w *withErrors) Message() string {
 	return w.message
 }
 
-func (w *withErrors) GetPriority() string {
+func GetPriority(err error) string {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return ""
+	}
+	return wErr.Priority()
+}
+
+func (w *withErrors) Priority() string {
 	if w.priority == "" {
 		w.message = emptyPriorityStr
 	}
 	return w.priority
 }
 
+func GetForcedHTTPStatus(err error) int {
+	var (
+		wErr WithErrors
+		ok   bool
+	)
+	if wErr, ok = err.(WithErrors); !ok {
+		return 0
+	}
+	return wErr.ForcedErrorHTTPStatus()
+}
+
+func (w *withErrors) ForcedErrorHTTPStatus() int {
+	return w.forcedHttpStatus
+}
+
 // Below are set process.
-// All the process will be replace existing one if any.
+// All of the process will replace the existing one if any.
 
 func (w *withErrors) WithCode(c string) WithErrors {
 	w.code = c
@@ -152,5 +235,10 @@ func (w *withErrors) WithPriority(p Priority) WithErrors {
 		priority = veryHigh
 	}
 	w.priority = priority
+	return w
+}
+
+func (w *withErrors) WithForcedErrorHTTPStatus(status int) WithErrors {
+	w.forcedHttpStatus = status
 	return w
 }
